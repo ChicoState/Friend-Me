@@ -4,87 +4,100 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kalender/kalender.dart';
 
-
 class ScheduleRoute extends StatefulWidget {
-  const ScheduleRoute({super.key});
+  const ScheduleRoute({
+    super.key,
+    required this.eventsController,
+    required this.calendarController,
+    required this.calendarComponents,
+    required this.calendarStyle,
+    required this.calendarLayoutDelegates,
+    required this.currentConfiguration,
+    required this.onDateTapped,
+  });
+  final CalendarEventsController<Event> eventsController;
+  final CalendarController<Event> calendarController;
+  final CalendarComponents calendarComponents;
+  final CalendarStyle calendarStyle;
+  final CalendarLayoutDelegates<Event> calendarLayoutDelegates;
+
+  final ViewConfiguration currentConfiguration;
+  final VoidCallback onDateTapped;
 
   @override
   State<ScheduleRoute> createState() => _ScheduleRouteState();
 }
 
-class _ScheduleRouteState extends State<ScheduleRoute> with AutomaticKeepAliveClientMixin{
-	//calendar and events controller
-	final CalendarController<Event> controller = CalendarController(); 
-	final CalendarEventsController<Event> eventController = CalendarEventsController<Event>(); 
-	
-	//currrent configuration to hold current view and list to hold week and month view. 
-	late ViewConfiguration currentConfiguration = viewConfigurations[0]; 
-	List<ViewConfiguration> viewConfigurations = [
-	WeekConfiguration(),
+class _ScheduleRouteState extends State<ScheduleRoute> {
+  //currrent configuration to hold current view and list to hold week and month view.
+  late ViewConfiguration currentConfiguration = viewConfigurations[0];
+  List<ViewConfiguration> viewConfigurations = [
+    WeekConfiguration(),
     MonthConfiguration(),
-    //MultiWeekConfiguration( numberOfWeeks: 3, ),
-	];
-	
-	@override
-	void initState(){
-		super.initState(); 
-		DateTime now = DateTime.now();		
-	}
-	
-	@override
-	Widget build(BuildContext context){
-		final calendar = CalendarView<Event>(
-			controller: controller,
-			eventsController: eventController,
-			viewConfiguration: currentConfiguration,
-			tileBuilder: _tileBuilder,
-			multiDayTileBuilder: _multiDayTileBuilder,
-			scheduleTileBuilder: _scheduleTileBuilder,
-			components: CalendarComponents( calendarHeaderBuilder: _calendarHeader, ),
-			eventHandlers: CalendarEventHandlers(
-				onEventTapped: _onEventTapped,
-				onEventChanged: _onEventChanged,
-				onCreateEvent: _onCreateEvent,
-				onEventCreated: _onEventCreated,
-			),
-		);
-		return SafeArea(
-			child: Scaffold( 
-				backgroundColor: Colors.white,
-				appBar: const NavBar(),
-				body: calendar,
-			),
-		);
-	}
-	CalendarEvent<Event> _onCreateEvent(DateTimeRange dateTimeRange) {
-		String start = getTime(dateTimeRange.start); 
-		String end = getTime(dateTimeRange.end); 
-		String timeRange = "$start - $end";
-		return CalendarEvent(
-		  dateTimeRange: dateTimeRange,
-		  eventData: Event(
-			title: '$timeRange',
-		  ),
-		);
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    DateTime now = DateTime.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: const NavBar(),
+        body: CalendarView<Event>(
+          controller: widget.calendarController,
+          eventsController: widget.eventsController,
+          viewConfiguration: widget.currentConfiguration,
+          tileBuilder: _tileBuilder,
+          multiDayTileBuilder: _multiDayTileBuilder,
+          scheduleTileBuilder: _scheduleTileBuilder,
+          components: widget.calendarComponents,
+          style: widget.calendarStyle,
+          layoutDelegates: widget.calendarLayoutDelegates,
+          eventHandlers: CalendarEventHandlers<Event>(
+            onEventChanged: _onEventChanged,
+            onEventTapped: _onEventTapped,
+            onCreateEvent: _onCreateEvent,
+            onEventCreated: _onEventCreated,
+          ),
+        ),
+      ),
+    );
+  }
+
+  CalendarEvent<Event> _onCreateEvent(DateTimeRange dateTimeRange) {
+    String start = getTime(dateTimeRange.start);
+    String end = getTime(dateTimeRange.end);
+    String timeRange = "$start - $end";
+    return CalendarEvent(
+      dateTimeRange: dateTimeRange,
+      eventData: Event(
+        title: '$timeRange',
+      ),
+    );
   }
 
   Future<void> _onEventCreated(CalendarEvent<Event> event) async {
     // Add the event to the events controller.
-    eventController.addEvent(event);
+    widget.eventsController.addEvent(event);
 
     // Deselect the event.
-    eventController.deselectEvent();
+    widget.eventsController.deselectEvent();
   }
 
   Future<void> _onEventTapped(
     CalendarEvent<Event> event,
   ) async {
-	
     if (isMobile) {
-      eventController.selectedEvent == event
-          ? eventController.deselectEvent()
-          : eventController.selectEvent(event);
+      widget.eventsController.selectedEvent == event
+          ? widget.eventsController.deselectEvent()
+          : widget.eventsController.selectEvent(event);
     }
+    widget.eventsController.removeEvent;
   }
 
   Future<void> _onEventChanged(
@@ -92,7 +105,7 @@ class _ScheduleRouteState extends State<ScheduleRoute> with AutomaticKeepAliveCl
     CalendarEvent<Event> event,
   ) async {
     if (isMobile) {
-      eventController.deselectEvent();
+      widget.eventsController.deselectEvent();
     }
   }
 
@@ -163,33 +176,31 @@ class _ScheduleRouteState extends State<ScheduleRoute> with AutomaticKeepAliveCl
               .toList(),
         ),
         IconButton.filledTonal(
-          onPressed: controller.animateToPreviousPage,
+          onPressed: widget.calendarController.animateToPreviousPage,
           icon: const Icon(Icons.navigate_before_rounded),
         ),
         IconButton.filledTonal(
-          onPressed: controller.animateToNextPage,
+          onPressed: widget.calendarController.animateToNextPage,
           icon: const Icon(Icons.navigate_next_rounded),
         ),
-		Column(
-			children: <Widget>[
-				for(var item in eventController.events) Text(getTitle(item.eventData))
-			],
-		),
+        Column(
+          children: <Widget>[
+            for (var item in widget.eventsController.events)
+              Text(getTitle(item.eventData))
+          ],
+        ),
       ],
     );
   }
-	
+
   bool get isMobile {
     return kIsWeb ? false : Platform.isAndroid || Platform.isIOS;
   }
-
-  @override
-  bool get wantKeepAlive => true; 
 }
 
-
-
-//eventDetails
+/*
+this is the eventData class for CalendarEvent, which are stored in CalendarEventsController.events
+*/
 class Event {
   Event({
     required this.title,
@@ -207,13 +218,12 @@ class Event {
   final Color? color;
 }
 
-
-String getTime(DateTime DT){
-	String time = "${DT.hour}:${DT.minute}";
-	return time; 
+String getTime(DateTime DT) {
+  String time = "${DT.hour}:${DT.minute}";
+  return time;
 }
 
-String getTitle(Event? e){
-	String title = e?.title ?? "null"; 
-	return title;
+String getTitle(Event? e) {
+  String title = e?.title ?? "null";
+  return title;
 }
