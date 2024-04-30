@@ -5,13 +5,14 @@ import 'package:flutter/material.dart';
 class Event {
   Event({
     required this.title,
+    this.id,
     this.description,
     this.color,
   });
 
   /// The title of the [Event]. //used to show the start/end time in calendar view. 
   String? title;
-
+  final int? id; 
   /// The description of the [Event]. unused, can likley be removed later. 
   final String? description;
 
