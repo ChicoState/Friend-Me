@@ -16,10 +16,14 @@ jobs:
     - uses: subosito/flutter-action@v2.16.0
       with:
         channel: stable
-    - run: |
-           flutter pub get
-           flutter build web
-           flutter test
+    - name: Pub Get
+      run: flutter pub get
+      working-directory: friend_me 
+    - name: Build Web
+      run: flutter build web
+      working-directory: friend_me 
+    - name: Tests
+      run: flutter test
       working-directory: friend_me 
     
      
